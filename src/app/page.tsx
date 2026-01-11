@@ -1,14 +1,26 @@
-// src/app/page.js (UI全面刷新: ダークモード修正、音声読み上げ、新デザイン適用版)
+// src/app/page.tsx (修正版)
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, FormEvent, KeyboardEvent, ChangeEvent } from 'react';
 import { generateAnswer } from './actions';
-import { Send, Bot, User, Volume2, StopCircle, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Volume2, StopCircle, Loader2, Paperclip } from 'lucide-react';
+// Markdown表示用のライブラリをインポート
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// メッセージの型定義
+interface Message {
+  id: string;
+  role: 'user' | 'ai';
+  content: string;
+  files?: string[];
+  isLoading?: boolean;
+  isError?: boolean;
+}
 
 export default function Home() {
   // チャット履歴を管理するステート
-  // 初期値として、AIからの挨拶を入れておく
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: 'init-1',
       role: 'ai',
@@ -18,15 +30,15 @@ export default function Home() {
   // 送信中のローディング状態
   const [isPending, startTransition] = useTransition();
   // 音声読み上げの状態管理
-  const [speakingMessageId, setSpeakingMessageId] = useState(null);
-  const synthRef = useRef(null); // ブラウザの音声合成機能への参照
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  
+  // ▼▼▼ ここが今回の修正ポイント ▼▼▼
+  // synthRefに「SpeechSynthesis または null」が入ることを明示します
+  const synthRef = useRef<SpeechSynthesis | null>(null);
 
-  // フォームの参照（送信後にリセットするため）
-  const formRef = useRef(null);
-  // チャット末尾へのスクロール用
-  const messagesEndRef = useRef(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 初期化: 音声合成機能の取得と、アンマウント時の停止処理
   useEffect(() => {
     if (typeof window !== 'undefined') {
       synthRef.current = window.speechSynthesis;
@@ -38,17 +50,15 @@ export default function Home() {
     };
   }, []);
 
-  // メッセージが追加されたら自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
 
   // --- 音声読み上げ機能 ---
-  const handleSpeak = (text, messageId) => {
+  const handleSpeak = (text: string, messageId: string) => {
     if (!synthRef.current) return;
 
-    // 既に話している場合は停止
     if (synthRef.current.speaking) {
       synthRef.current.cancel();
       if (speakingMessageId === messageId) {
@@ -57,11 +67,35 @@ export default function Home() {
       }
     }
 
-    // 新しく読み上げを開始
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP'; // 日本語に設定
-    utterance.rate = 1.0; // 読み上げ速度
+    // Markdown記号などを読み上げさせないための簡易的なクレンジング
+    const plainText = text
+      .replace(/[#*`~\[\]()<>#-]/g, '') // 記号を除去
+      .replace(/\n/g, '、') // 改行を読点に置換して少し間を持たせる
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    // 声質の選択を試みる処理
+    const voices = synthRef.current.getVoices();
+    const jpVoices = voices.filter(v => v.lang.includes('ja') || v.lang.includes('JP'));
     
+    const preferredVoiceName = jpVoices.find(v => 
+        v.name.includes('Google') ||
+        v.name.includes('Ichiro') ||
+        v.name.includes('Ayumi')
+    );
+
+    if (preferredVoiceName) {
+        utterance.voice = preferredVoiceName;
+        // console.log(`Voice set to: ${preferredVoiceName.name}`);
+    } else if (jpVoices.length > 0) {
+        utterance.voice = jpVoices[0];
+        // console.log(`Voice set to default JP: ${jpVoices[0].name}`);
+    }
+
     utterance.onstart = () => setSpeakingMessageId(messageId);
     utterance.onend = () => setSpeakingMessageId(null);
     utterance.onerror = () => setSpeakingMessageId(null);
@@ -71,40 +105,36 @@ export default function Home() {
 
 
   // --- 送信ハンドラ ---
-  const handleSubmit = async (formData) => {
-    const question = formData.get('question');
-    const files = formData.getAll('files');
+  const handleSubmit = async (formData: FormData) => {
+    const question = formData.get('question') as string;
+    const files = formData.getAll('files') as File[];
     if (!question?.trim() && files.length === 0) return;
 
-    // 1. ユーザーのメッセージを即座に表示
     const userMessageId = Date.now().toString();
-    const newUserMessage = {
+    const newUserMessage: Message = {
       id: userMessageId,
       role: 'user',
       content: question,
       files: files.length > 0 ? Array.from(files).map(f => f.name) : []
     };
     setMessages(prev => [...prev, newUserMessage]);
-    formRef.current?.reset(); // フォームをクリア
+    formRef.current?.reset();
 
-    // 2. Server Action を呼び出す（トランジションでラップしてローディング状態を管理）
     startTransition(async () => {
-      // AIの仮メッセージを表示（ローディング中）
       const aiTempId = (Date.now() + 1).toString();
       setMessages(prev => [...prev, { id: aiTempId, role: 'ai', content: '考え中...', isLoading: true }]);
 
       try {
+        // generateAnswerの引数の型を一時的に回避するため any にキャスト
         const result = await generateAnswer(null, formData);
         
-        // 仮メッセージを本物の回答に置き換える
         setMessages(prev => prev.map(msg => 
           msg.id === aiTempId 
             ? { id: aiTempId, role: 'ai', content: result.answer, isLoading: false }
             : msg
         ));
 
-      } catch (error) {
-        // エラー表示
+      } catch (error: any) {
         setMessages(prev => prev.map(msg => 
           msg.id === aiTempId 
             ? { id: aiTempId, role: 'ai', content: `エラーが発生しました: ${error.message}`, isLoading: false, isError: true }
@@ -115,16 +145,15 @@ export default function Home() {
   };
 
   return (
-    // 全体のコンテナ：ダークモード対応の背景色と文字色を設定
     <main className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans">
       
       {/* ヘッダー */}
       <header className="flex items-center p-4 bg-white dark:bg-gray-800 shadow-md z-10">
         <Bot className="w-8 h-8 text-blue-500 mr-3" />
-        <h1 className="text-xl font-bold">社会保険・労働保険AIアシスタント (雇用保険・継続給付編)</h1>
+        <h1 className="text-xl font-bold">社会保険・労働保険AIアシスタント (Gemini 3 Pro Preview)</h1>
       </header>
 
-      {/* チャットエリア (スクロール可能) */}
+      {/* チャットエリア */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg) => (
           <div
@@ -142,13 +171,12 @@ export default function Home() {
 
             {/* メッセージの吹き出し */}
             <div
-              className={`relative max-w-[80%] p-4 rounded-2xl shadow-sm ${
+              className={`relative max-w-[85%] p-4 rounded-2xl shadow-sm ${
                 msg.role === 'user'
-                  ? 'bg-blue-500 text-white rounded-tr-none' // ユーザー: 青背景
-                  : 'bg-white dark:bg-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700' // AI: 白/グレー背景
+                  ? 'bg-blue-500 text-white rounded-tr-none'
+                  : 'bg-white dark:bg-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700'
               }`}
             >
-              {/* ローディング表示 */}
               {msg.isLoading && (
                 <div className="flex items-center text-gray-500 dark:text-gray-400">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -156,21 +184,30 @@ export default function Home() {
                 </div>
               )}
 
-              {/* テキスト本文（改行を反映） */}
               {!msg.isLoading && (
-                <div className="whitespace-pre-wrap leading-relaxed">
+                // Markdownとして表示するコンポーネント
+                <ReactMarkdown
+                    className="prose dark:prose-invert max-w-none leading-relaxed break-words"
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                        // リンクを新しいタブで開くように設定
+                        a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline hover:text-blue-700" />
+                    }}
+                >
                   {msg.content}
-                </div>
+                </ReactMarkdown>
               )}
               
-              {/* 添付ファイル名表示（ユーザー側のみ） */}
               {msg.files && msg.files.length > 0 && (
-                 <div className="mt-2 text-sm text-blue-200">
-                   📎 {msg.files.join(', ')}
+                 <div className="mt-2 text-sm text-blue-200 flex flex-wrap gap-2">
+                   {msg.files.map((f,i) => (
+                       <span key={i} className="flex items-center bg-blue-600 px-2 py-1 rounded">
+                           <Paperclip className="w-3 h-3 mr-1"/> {f}
+                       </span>
+                   ))}
                  </div>
               )}
 
-              {/* 音声読み上げボタン（AI側の回答完了時のみ表示） */}
               {msg.role === 'ai' && !msg.isLoading && !msg.isError && (
                 <button
                   onClick={() => handleSpeak(msg.content, msg.id)}
@@ -196,55 +233,61 @@ export default function Home() {
             )}
           </div>
         ))}
-        <div ref={messagesEndRef} /> {/* スクロール位置の目印 */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* 入力エリア (固定フッター) */}
       <footer className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-        <form ref={formRef} action={handleSubmit} className="max-w-4xl mx-auto flex flex-col gap-3">
+        <form ref={formRef} action={handleSubmit} className="max-w-5xl mx-auto">
           
-          {/* テキスト入力エリア */}
-          <div className="relative flex items-center">
-            <textarea
-              name="question"
-              placeholder="質問を入力してください..."
-              rows="3"
-              className="w-full p-3 pr-12 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-800 dark:text-gray-200"
-              onKeyDown={(e) => {
-                // Ctrl+Enter または Cmd+Enter で送信
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    formRef.current.requestSubmit();
-                }
-              }}
-            />
-            {/* 送信ボタン */}
+          {/* 入力エリアとボタンを横並びにするレイアウト */}
+          <div className="flex items-end gap-2">
+              <div className="flex-1 relative">
+                <textarea
+                name="question"
+                placeholder="質問を入力してください..."
+                rows={2} // 初期高さを少し低く
+                className="w-full p-3 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-800 dark:text-gray-200"
+                onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        formRef.current?.requestSubmit();
+                    }
+                }}
+                />
+            </div>
+            {/* 送信ボタンをテキストエリアの外に出す */}
             <button
               type="submit"
               disabled={isPending}
-              className="absolute right-3 bottom-3 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex-shrink-0"
+              title="送信 (Ctrl + Enter)"
             >
-              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
             </button>
           </div>
 
-          {/* ファイル添付エリア */}
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mt-3 text-sm text-gray-600 dark:text-gray-400">
              <label htmlFor="file-upload" className="cursor-pointer flex items-center hover:text-blue-500">
-                 <span className="mr-2">📎 追加資料を添付 (PDF):</span>
+                 <Paperclip className="w-5 h-5 mr-2" />
+                 <span>追加資料を添付 (PDF)</span>
                  <input
                     id="file-upload"
                     type="file"
                     name="files"
                     accept="application/pdf"
                     multiple
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-200"
+                    className="hidden" // input自体は隠す
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        // ファイルが選択されたら、ファイル名を入力欄に表示するなどの処理をここに追加できます
+                        // 今回はシンプルにするため、特に何もしません
+                    }}
                  />
              </label>
+             <p className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
+                 Gemini 3 Pro Preview は誤った情報を生成する可能性があります。(Ctrl+Enterで送信)
+             </p>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-             Gemini 3 Pro Preview は誤った情報を生成する可能性があります。重要な情報は必ず元の資料で確認してください。また、個人情報の入力は行わないでください。(Ctrl + Enter で送信)
-          </p>
         </form>
       </footer>
     </main>
