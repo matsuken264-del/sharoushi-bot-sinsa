@@ -14,7 +14,7 @@ const nextConfig = {
   },
   
   // Webpackの設定
-  webpack: (config) => {
+  webpack: (config: any) => {
     config.resolve.alias.canvas = false;
     return config;
   },
