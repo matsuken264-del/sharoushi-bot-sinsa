@@ -23,7 +23,7 @@ export default function Home() {
     {
       id: 'init-1',
       role: 'ai',
-      content: 'こんにちは！社労士AIアシスタント（Gemini 3 Pro Preview搭載）です。\n\nRAG（固定資料）とWeb検索を駆使して回答します。資料のアップロードも可能です。\n\n何かお手伝いできることはありますか？\n\n※個人情報の入力は行わないでください。'
+      content: 'こんにちは！社会保険・労働保険AIアシスタント（雇用保険・継続給付編）（Gemini 3 Pro Preview搭載）です。\n\nRAG（固定資料）とWeb検索を駆使して回答します。資料のアップロードも可能です。\n\n何かお手伝いできることはありますか？\n\n※個人情報の入力は行わないでください。'
     }
   ]);
   // 送信中のローディング状態
@@ -146,7 +146,7 @@ export default function Home() {
       {/* ヘッダー */}
       <header className="flex items-center p-4 bg-white dark:bg-gray-800 shadow-md z-10">
         <Bot className="w-8 h-8 text-blue-500 mr-3" />
-        <h1 className="text-xl font-bold">社会保険・労働保険AIアシスタント (Gemini 3 Pro Preview)</h1>
+        <h1 className="text-xl font-bold">社会保険・労働保険AIアシスタント（雇用保険・継続給付編） (Gemini 3 Pro Preview)</h1>
       </header>
 
       {/* チャットエリア */}
