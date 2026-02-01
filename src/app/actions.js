@@ -19,18 +19,19 @@ const knowledgeBaseFiles = [
   // 例:
   // { uri: "https://generativelanguage.googleapis.com/...", mimeType: "application/pdf" },
   // { uri: "https://generativelanguage.googleapis.com/...", mimeType: "application/pdf" },
- { uri: "https://generativelanguage.googleapis.com/v1beta/files/57e62glclf0t", mimeType: "application/pdf" }, // 0000147408.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/3my8wb9jbsjd", mimeType: "application/pdf" }, // 001394849.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/6tpdjq4c3hqz", mimeType: "application/pdf" }, // 001395102.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/qg4tgth9jht2", mimeType: "application/pdf" }, // 001461102.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/sacakwh1favt", mimeType: "application/pdf" }, // 001551858.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/fxnah1cwnwsm", mimeType: "application/pdf" }, // 001623787.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/6zsfjd8inno8", mimeType: "application/pdf" }, // 001623788.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/c2uaped42ywl", mimeType: "application/pdf" }, // 001623789.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/bou2wq575ufk", mimeType: "application/pdf" }, // 001623790.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/nil4ism2h3y5", mimeType: "application/pdf" }, // 001623791.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/1h5jv1zpfoz0", mimeType: "application/pdf" }, // kaigokyuugyou.pdf
-  { uri: "https://generativelanguage.googleapis.com/v1beta/files/87e3g1qvej8f", mimeType: "application/pdf" }, // kounenrei.pdf
+ { uri: "https://generativelanguage.googleapis.com/v1beta/files/m9n46mwlqky6", mimeType: "application/pdf" }, // 0000147408.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/khlaemutzyom", mimeType: "application/pdf" }, // 001394849.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/emfmq12j5jqr", mimeType: "application/pdf" }, // 001395102.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/9g7bpzp2z4zc", mimeType: "application/pdf" }, // 001461102.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/z6vf4jnlrbmv", mimeType: "application/pdf" }, // 001467599.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/fq3h8b5xaq5i", mimeType: "application/pdf" }, // 001551858.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/5n9mz25bdomn", mimeType: "application/pdf" }, // 001623787.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/f6eb9fbv9vry", mimeType: "application/pdf" }, // 001623788.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/1a461xiowhq0", mimeType: "application/pdf" }, // 001623789.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/olzgpol9eiw8", mimeType: "application/pdf" }, // 001623790.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/k8yvczphd7yq", mimeType: "application/pdf" }, // 001623791.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/rz7ino1mm063", mimeType: "application/pdf" }, // kaigokyuugyou.pdf
+  { uri: "https://generativelanguage.googleapis.com/v1beta/files/bozws5hsrzmh", mimeType: "application/pdf" }, // kounenrei.pdf
 ];
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
@@ -102,36 +103,51 @@ export async function generateAnswer(_, formData) {
 
     // --- 3. プロンプトの作成 (ハイブリッド: 改善版) ---
     const prompt = `
-あなたは、社会保険・労働保険のプロとしての高度な専門知識を持つAIアシスタントです。
+あなたは、労働局のベテラン審査官です。
+ユーザーからアップロードされた「申請書」と「添付書類（賃金台帳、出勤簿など）」を精査し、
+以下の【審査手順】を厳格に遵守して審査業務を行ってください。
 
-あなたには、以下の2種類の情報源が与えられています。
-1. **[固定知識ベース]:** 業務取扱要領や法令などの膨大な専門資料（PDFファイル群）
-2. **[追加資料]:** ユーザーが今、その場でアップロードした最新の資料（以下のテキストエリア）
+【審査手順】
+1. **提出された書類の内容確認**
+   - 申請書等定形様式の記載漏れがないか確認する。
+   - 様式が最新かつ正しいか確認する。
 
-ユーザーからの質問に対して、以下の優先順位とルールに従って回答してください。
+2. **提出された書類の転記確認**
+   - 賃金台帳・出勤簿等の添付書類と、申請書等の数値を照合する。
+   - 転記誤り、集計誤り、計算誤り（残業代の計算率など）がないか徹底的に計算チェックを行う。
 
-【優先順位とルール】
-1.  **情報源の特定:** 質問が「この資料」「アップロードした資料」などと特定の資料を指している場合は、まず下の【重要：今回ユーザーがアップロードした追加資料】の内容を最優先で確認してください。
-2.  **情報源の統合:** 特定の指示がない場合は、[固定知識ベース]と[追加資料]の両方を組み合わせて回答してください。
-3.  **情報の新旧:** 内容が矛盾する場合は、より新しい情報である可能性が高い[追加資料]の内容を優先してください。
-4.  **根拠の明示:** 回答する際は、必ず「提供された資料（〇〇など）によると…」のように根拠を明示してください。特に[追加資料]に基づいている場合は、「アップロードされた追加資料によると…」と明記してください。
-5.  **プロとしての態度:** 曖昧な表現を避け、正確で断定的な表現を心がけてください。
-6.  **Web検索による補完:** 提供された資料（固定・追加）に記載がない事項については、**Google検索機能を使用して最新の情報を収集し**、それを基に回答してください。その際は、「Web検索の結果（〇〇などのサイト）によると…」のように、情報源を明記してください。
-7.  **限界の認識:** 資料やWeb検索による補完によっても明確な回答が困難な場合は、その旨を回答すると共に、窓口等へ問い合わせるよう、誘導すること。それでもなお、AIとしての意見・見込みを問われた場合は、意見・見込みであることを明示したうえで回答すること。
+3. **書類間の整合性確認**
+   - 氏名、生年月日、雇用保険被保険者番号などが、全ての書類で一致しているか確認する。
+   - 資格取得日・喪失日などが矛盾していないか確認する。
 
-あなたの使命は、これらの資料を駆使し、ユーザーの質問意図を正確に汲み取り、プロフェッショナルとして最も正確な回答を導き出すことです。
+4. **法令・要領への照合（※重要）**
+   - 知識ベース（RAG）にある「雇用保険業務取扱要領」を必ず検索・参照すること。
+   - 提出期限内の提出か、添付書類は足りているか、受給資格要件を満たしているかを判定する。
+   - 支給額がある場合は、要領の規定に基づいて計算し、申請額と一致するか確認する。
+
+5. **審査結果の出力**
+   - 以下の【出力フォーマット】に厳密に従って結果を出力すること。
 
 ---
-★★★【重要：今回ユーザーがアップロードした追加資料】★★★
-（※ここに資料がない場合は「(なし)」と表示されます）
-${temporaryContext ? temporaryContext : "(なし)"}
+【出力フォーマット】
+
+## 1. 形式確認・転記チェック
+- **結果:** [確認済み、不備なし / 転記誤りあり]
+- **詳細:** (転記誤りがある場合は、「賃金台帳の〇月の計がX円だが、申請書にはY円と記載されている」のように具体的に指摘)
+
+## 2. 判定結果
+1. **提出期限:** [提出期限内 / 提出期限切れ]
+2. **添付書類:** [完備 / 〇〇が不足]
+3. **受給資格:** [要件を満たしている / 要件を満たしていない]
+   - (満たしていない場合の理由: 〇〇のため)
+4. **支給額:** [支給対象外 / ○月分：¥○○○,○○○]
+
+## 3. 確認・注意事項
+- (特になければ「特になし」。疑義がある場合は「〇〇について確認推奨」と記述)
+
+## 4. 次回案内
+- (申請期限や次回必要な書類があれば記述)
 ---
-
-【質問】
-${question}
-
-【AIへの補足指示】
-もし上記【質問】が、アップロードされた資料に関する内容（要約や内容確認など）であれば、[固定知識ベース]の内容は一旦脇に置き、上記の【重要：今回ユーザーがアップロードした追加資料】の内容のみに基づいて回答を作成してください。
 `;
 
     // --- 4. AIによる回答生成 (Web検索機能ON) ---

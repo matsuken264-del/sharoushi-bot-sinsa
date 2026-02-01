@@ -23,7 +23,7 @@ export default function Home() {
     {
       id: 'init-1',
       role: 'ai',
-      content: 'こんにちは！社会保険・労働保険AIアシスタント（雇用保険・継続給付編）（Gemini 3 Pro Preview搭載）です。\n\nRAG（固定資料）とWeb検索を駆使して回答します。資料のアップロードも可能です。\n\n何かお手伝いできることはありますか？\n\n※注意事項・免責事項\n\n※個人情報の入力は行わないでください。\n\n※生成AIは誤った回答する場合があります。参考・補助に止め、元の資料等で確認するようにしてください。\n\n※AIの回答によって生じた損害については、一切責任を負いません。'
+      content: 'こんにちは！雇用保険審査業務自動化AIエージェント（継続給付編）（Gemini 3 Pro Preview搭載）です。\n\nRAG（要領）を駆使して判定します。PDF資料のアップロードが可能です。\n\n何かお手伝いできることはありますか？\n\n※注意事項・免責事項\n\n※個人情報の入力は行わないでください。\n\n※生成AIは誤った回答する場合があります。参考・補助に止め、元の資料等で確認するようにしてください。\n\n※AIの回答によって生じた損害については、一切責任を負いません。\n\n※技術実証用のテスト版です。ダミーデータを使用してください。'
     }
   ]);
   // 送信中のローディング状態
@@ -146,7 +146,7 @@ export default function Home() {
       {/* ヘッダー */}
       <header className="flex items-center p-4 bg-white dark:bg-gray-800 shadow-md z-10">
         <Bot className="w-8 h-8 text-blue-500 mr-3" />
-        <h1 className="text-xl font-bold">社会保険・労働保険AIアシスタント（雇用保険・継続給付編） (Gemini 3 Pro Preview)</h1>
+        <h1 className="text-xl font-bold">雇用保険審査業務自動化AIエージェント（継続給付編）【技術実証用】 (Gemini 3 Pro Preview)</h1>
       </header>
 
       {/* チャットエリア */}
@@ -242,7 +242,7 @@ export default function Home() {
               <div className="flex-1 relative">
                 <textarea
                 name="question"
-                placeholder="質問を入力してください..."
+                placeholder="コメントを入力してください..."
                 rows={2} // 初期高さを少し低く
                 className="w-full p-3 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-800 dark:text-gray-200"
                 onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -267,7 +267,7 @@ export default function Home() {
           <div className="flex items-center justify-between mt-3 text-sm text-gray-600 dark:text-gray-400">
              <label htmlFor="file-upload" className="cursor-pointer flex items-center hover:text-blue-500">
                  <Paperclip className="w-5 h-5 mr-2" />
-                 <span>追加資料を添付 (PDF)</span>
+                 <span>審査対象資料をアップロード (PDF)</span>
                  <input
                     id="file-upload"
                     type="file"
