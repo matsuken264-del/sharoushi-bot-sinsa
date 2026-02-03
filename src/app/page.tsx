@@ -23,7 +23,7 @@ export default function Home() {
     {
       id: 'init-1',
       role: 'ai',
-      content: 'こんにちは！雇用保険審査業務自動化AIエージェント（継続給付編）（Gemini 3 Pro Preview搭載）です。\n\nRAG（要領）を駆使して判定します。PDF資料のアップロードが可能です。\n\n何かお手伝いできることはありますか？\n\n※注意事項・免責事項\n\n※個人情報の入力は行わないでください。\n\n※生成AIは誤った回答する場合があります。参考・補助に止め、元の資料等で確認するようにしてください。\n\n※AIの回答によって生じた損害については、一切責任を負いません。\n\n※技術実証用のテスト版です。ダミーデータを使用してください。'
+      content: 'こんにちは！雇用保険審査業務自動化AIエージェント（育児休業等給付・継続給付編）（Gemini 3 Pro Preview搭載）です。\n\nRAG（要領）を駆使して判定します。PDF資料のアップロードが可能です。\n\n何かお手伝いできることはありますか？\n\n※注意事項・免責事項\n\n※個人情報の入力は行わないでください。\n\n※生成AIは誤った回答する場合があります。参考・補助に止め、元の資料等で確認するようにしてください。\n\n※AIの回答によって生じた損害については、一切責任を負いません。\n\n※技術実証用のテスト版です。ダミーデータを使用してください。'
     }
   ]);
   // 送信中のローディング状態
@@ -146,7 +146,7 @@ export default function Home() {
       {/* ヘッダー */}
       <header className="flex items-center p-4 bg-white dark:bg-gray-800 shadow-md z-10">
         <Bot className="w-8 h-8 text-blue-500 mr-3" />
-        <h1 className="text-xl font-bold">雇用保険審査業務自動化AIエージェント（継続給付編）【技術実証用】 (Gemini 3 Pro Preview)</h1>
+        <h1 className="text-xl font-bold">雇用保険審査業務自動化AIエージェント（育児休業等給付・継続給付編）【技術実証用】 (Gemini 3 Pro Preview)</h1>
       </header>
 
       {/* チャットエリア */}
