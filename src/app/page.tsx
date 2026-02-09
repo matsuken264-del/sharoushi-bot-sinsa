@@ -272,7 +272,7 @@ export default function Home() {
                     id="file-upload"
                     type="file"
                     name="files"
-                    accept="application/pdf"
+                    accept="application/pdf, image/jpeg, image/png"
                     multiple
                     className="hidden" // input自体は隠す
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
