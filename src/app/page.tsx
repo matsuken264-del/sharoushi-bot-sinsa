@@ -267,7 +267,7 @@ export default function Home() {
           <div className="flex items-center justify-between mt-3 text-sm text-gray-600 dark:text-gray-400">
              <label htmlFor="file-upload" className="cursor-pointer flex items-center hover:text-blue-500">
                  <Paperclip className="w-5 h-5 mr-2" />
-                 <span>審査対象資料をアップロード (PDF)</span>
+                 <span>審査対象資料をアップロード (PDF,JPEG,PNG)</span>
                  <input
                     id="file-upload"
                     type="file"
